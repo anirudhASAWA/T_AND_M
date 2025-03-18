@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time and Motion Study</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Time and Motion Study</h1>
+    
+    <!-- Add Process Form -->
+    <div class="form-group">
+      <input type="text" id="processInput" placeholder="Enter process name">
+      <button id="addProcessBtn" class="btn-primary">Add Process</button>
+      <button id="updateProcessBtn" class="btn-success" style="display: none; margin-left: 10px;">Update Process</button>
+      <button id="cancelEditBtn" class="btn-secondary" style="display: none; margin-left: 10px;">Cancel</button>
+    </div>
+    
+    <!-- Process Table -->
+    <div id="processTableContainer" style="display: none;">
+      <div class="section-header">
+        <h2>Processes</h2>
+        <button id="exportBtn" class="btn-success">Export to Excel</button>
+      </div>
+      
+      <div class="table-container">
+        <table id="processTable">
+          <thead>
+            <tr>
+              <th>Process</th>
+              <th>Timer</th>
+              <th>Controls</th>
+              <th colspan="2">Subprocesses</th>
+            </tr>
+          </thead>
+          <tbody id="processTableBody">
+            <!-- Processes will be added here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Recorded Times -->
+    <div id="recordedTimesContainer" style="display: none; margin-top: 30px;">
+      <h2>Recorded Times</h2>
+      <div class="recorded-times">
+        <table id="recordedTimesTable">
+          <thead>
+            <tr>
+              <th>Process</th>
+              <th>Subprocess</th>
+              <th>Time</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="recordedTimesTableBody">
+            <!-- Recorded times will be added here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="instructions">
+      <h3>How to use:</h3>
+      <ol>
+        <li>Add a process using the input field at the top</li>
+        <li>For each process, add the required subprocesses</li>
+        <li>Click "Start" on a process to begin timing</li>
+        <li>When a subprocess is completed, click its "Lap" button</li>
+        <li>Continue clicking "Lap" for each subprocess as you complete them</li>
+        <li>Click "Stop" when finished or to pause timing</li>
+        <li>Click "Export to Excel" to save all your recorded data</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Include Excel library and app script -->
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
