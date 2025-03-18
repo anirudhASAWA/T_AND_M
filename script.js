@@ -20,16 +20,29 @@ const recordedTimesContainer = document.getElementById('recordedTimesContainer')
 const recordedTimesTableBody = document.getElementById('recordedTimesTableBody');
 const exportBtn = document.getElementById('exportBtn');
 
-// Format time in mm:ss:ms format
+// Format time in hh:mm:ss format
 function formatTime(time) {
   // Ensure time is a positive value
   time = Math.abs(time);
   
-  const minutes = Math.floor(time / 60000);
+  const hours = Math.floor(time / 3600000);
+  const minutes = Math.floor((time % 3600000) / 60000);
   const seconds = Math.floor((time % 60000) / 1000);
-  const milliseconds = Math.floor((time % 1000) / 10);
   
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Format date and time for display
+function formatDateTime(date) {
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
 }
 
 // Add a new process
@@ -137,7 +150,10 @@ function addSubprocess(processIndex) {
     name: subprocessName,
     time: 0,
     formattedTime: '00:00:00',
-    completed: false
+    completed: false,
+    activityType: '', // VA or NVA
+    remarks: '',      // Remarks
+    personCount: 1    // Default number of persons required
   });
   
   // Start the timer automatically if this is the first subprocess
@@ -262,17 +278,37 @@ function recordLap(processIndex, subprocessIndex) {
   
   if (!process.timerRunning || !state.timers[process.name]) return;
   
+  // Get additional data
+  const activityType = document.getElementById(`activity-type-${processIndex}-${subprocessIndex}`).value;
+  const remarks = document.getElementById(`remarks-${processIndex}-${subprocessIndex}`).value;
+  const personCount = parseInt(document.getElementById(`person-count-${processIndex}-${subprocessIndex}`).value) || 1;
+  
+  // Save the additional data to the subprocess
+  subprocess.activityType = activityType;
+  subprocess.remarks = remarks;
+  subprocess.personCount = personCount;
+  
   // Calculate time since last lap (this is the time difference)
   const currentTime = Date.now();
   const lapTime = currentTime - process.lastLapTime;
   
-  // Record reading
+  // Record reading with start and end times
+  const startTime = new Date(process.lastLapTime);
+  const endTime = new Date(currentTime);
+  
   const reading = {
     process: process.name,
     subprocess: subprocess.name,
     time: lapTime,
     formattedTime: formatTime(lapTime),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    activityType: activityType,
+    remarks: remarks,
+    personCount: personCount,
+    startTime: startTime.toISOString(),        // Store start time
+    endTime: endTime.toISOString(),            // Store end time
+    formattedStartTime: formatDateTime(startTime), // Formatted for display
+    formattedEndTime: formatDateTime(endTime)      // Formatted for display
   };
   
   if (!process.readings) {
@@ -347,7 +383,12 @@ function exportToExcel() {
         allReadings.push({
           "Process": process.name,
           "Subprocess": reading.subprocess,
-          "Time (mm:ss:ms)": reading.formattedTime,
+          "Time (hh:mm:ss)": reading.formattedTime,
+          "Activity Type": reading.activityType || "",
+          "Persons Required": reading.personCount || 1,
+          "Remarks": reading.remarks || "",
+          "Start Time": reading.formattedStartTime || "",
+          "End Time": reading.formattedEndTime || "",
           "Time (ms)": reading.time,
           "Timestamp": new Date(reading.timestamp).toLocaleString()
         });
@@ -448,9 +489,34 @@ function renderProcesses() {
         <td></td>
         <td></td>
         <td>
-          <span>${subprocess.name}</span>
-          ${subprocess.formattedTime !== '00:00:00' ? 
-            `<span class="subprocess-time">${subprocess.formattedTime}</span>` : ''}
+          <div class="subprocess-details">
+            <div class="subprocess-name">${subprocess.name}</div>
+            ${subprocess.formattedTime !== '00:00:00' ? 
+              `<span class="subprocess-time">${subprocess.formattedTime}</span>` : ''}
+            
+            <div class="subprocess-inputs">
+              <div class="input-group">
+                <label for="activity-type-${processIndex}-${subprocessIndex}">Activity Type:</label>
+                <select id="activity-type-${processIndex}-${subprocessIndex}" class="activity-type-select">
+                  <option value="" ${subprocess.activityType === '' ? 'selected' : ''}>Select</option>
+                  <option value="VA" ${subprocess.activityType === 'VA' ? 'selected' : ''}>VA</option>
+                  <option value="NVA" ${subprocess.activityType === 'NVA' ? 'selected' : ''}>NVA</option>
+                </select>
+              </div>
+              
+              <div class="input-group">
+                <label for="remarks-${processIndex}-${subprocessIndex}">Remarks:</label>
+                <input type="text" id="remarks-${processIndex}-${subprocessIndex}" class="remarks-input" 
+                  value="${subprocess.remarks || ''}" placeholder="Add remarks">
+              </div>
+              
+              <div class="input-group">
+                <label for="person-count-${processIndex}-${subprocessIndex}">Persons:</label>
+                <input type="number" id="person-count-${processIndex}-${subprocessIndex}" class="person-count-input" 
+                  value="${subprocess.personCount || 1}" min="1" max="100">
+              </div>
+            </div>
+          </div>
         </td>
         <td>
           <div class="controls">
@@ -469,6 +535,7 @@ function renderProcesses() {
 }
 
 // Render the recorded times table
+// Render the recorded times table
 function renderRecordedTimes() {
   recordedTimesTableBody.innerHTML = '';
   let hasReadings = false;
@@ -484,6 +551,11 @@ function renderRecordedTimes() {
           <td>${process.name}</td>
           <td>${reading.subprocess}</td>
           <td>${reading.formattedTime}</td>
+          <td>${reading.activityType || ""}</td>
+          <td>${reading.personCount || 1}</td>
+          <td>${reading.remarks || ""}</td>
+          <td>${reading.formattedStartTime || ""}</td>
+          <td>${reading.formattedEndTime || ""}</td>
           <td>${new Date(reading.timestamp).toLocaleString()}</td>
         `;
         
